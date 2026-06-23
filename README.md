@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# inkblot — your GitHub activity, as art
 
-## Getting Started
+**Sign in with GitHub and watch your commit history bloom into a symmetric streamgraph.** A Rorschach inkblot of every late night you shipped — a small, frictionless pat on the back for the grind.
 
-First, run the development server:
+![Sample activity inkblot](public/sample-inkblot.png)
+
+The band thickness at any moment is your commits-per-hour; each repo is a colored ribbon, busiest one straddling the centerline. Toggle repos on and off and drag the time window — the inkblot re-blooms as you fiddle.
+
+## Quickstart
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local     # then fill in the three values (see below)
+pnpm dlx vercel dev            # runs Next.js + the Python renderer together
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000, click **Sign in with GitHub**, and your inkblot renders itself.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> Use `vercel dev` (not `next dev`) for local development: the chart is rendered by a Python serverless function, which only `vercel dev` serves locally. `next dev` runs everything *except* the chart endpoint.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### The three env values
 
-## Learn More
+| Variable | Where it comes from |
+|---|---|
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | A [GitHub OAuth App](https://github.com/settings/developers) — callback `http://localhost:3000/api/auth/callback/github` |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
 
-To learn more about Next.js, take a look at the following resources:
+## How it works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```mermaid
+flowchart LR
+  U[Sign in with GitHub] --> A["/api/activity (Node)"]
+  A -->|Octokit Search Commits| G[(GitHub)]
+  A -->|bin hourly + onset window| C[client cache]
+  C -->|repos + time window| R["/api/render (Python · matplotlib)"]
+  R -->|PNG| C
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Auth** — Auth.js (NextAuth v5) with a single GitHub provider. The OAuth token lets the app read your authored commits (public always; private with the `repo` scope).
+- **Data** (`/api/activity`, Node) — pulls your commits via the Search Commits API, bins them into per-repo hourly counts, and computes the default time window: it opens *just before your activity ramps up*. The heavy fetch happens **once**.
+- **Render** (`/api/render`, Python) — a matplotlib port of the symmetric stacked streamgraph. The client re-POSTs the cached series with your current repo selection and window; debounced, with the in-flight render aborted when you keep fiddling, so it stays snappy.
 
-## Deploy on Vercel
+## Defaults that just work
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **All repos** selected.
+- **Time window** auto-starts just before activity got intense (smoothed-onset detection), so the chart opens on the interesting part of your history.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Privacy
+
+inkblot reads commit *metadata* (repo name + timestamp) to draw the chart. It renders on the fly and **does not store your code or your commits** — there is no database. The GitHub token lives only in your encrypted session cookie.
+
+## Stack
+
+Next.js 16 (App Router) · shadcn/ui + Tailwind v4 · Auth.js v5 · Octokit · matplotlib (Vercel Python function). Deploy with `vercel --prod`.
+
+## Tests
+
+```bash
+pnpm test                     # TypeScript: binning + onset detection + repo labels
+python3 api/test_inkblot.py   # Python: renderer contract invariants
+```
