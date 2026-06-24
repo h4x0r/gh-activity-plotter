@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Inkblot — your GitHub activity, as art",
   description:
-    "Sign in with GitHub and watch your commit history bloom into a symmetric streamgraph. A little pat on the back for the grind.",
+    "Type a GitHub username and watch a year of commits bloom into a symmetric streamgraph — a code inkblot. No login needed.",
 };
 
 export default function RootLayout({
