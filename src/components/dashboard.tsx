@@ -18,6 +18,7 @@ interface ActivityData {
   viewer: { login: string; name: string | null; avatarUrl: string | null };
   empty: boolean;
   truncated: boolean;
+  lookbackDays: number;
   start: number;
   stepHours: number;
   hours: number;
@@ -25,6 +26,10 @@ interface ActivityData {
   repos: RepoInfo[];
   window: { from: number; to: number };
 }
+
+// With a deep history a developer can have 100+ repos; default the chart to the
+// busiest few so it reads cleanly, and let them add more from the repo picker.
+const DEFAULT_TOP_REPOS = 20;
 
 const fmtDate = (ms: number) =>
   new Date(ms).toLocaleDateString(undefined, {
@@ -59,7 +64,9 @@ export function Dashboard({ user }: { user: User }) {
         }
         const d: ActivityData = await res.json();
         setData(d);
-        setSelected(new Set(d.repos.map((r) => r.name)));
+        setSelected(
+          new Set(d.repos.slice(0, DEFAULT_TOP_REPOS).map((r) => r.name)),
+        );
         if (!d.empty) {
           const from = Math.round(
             (d.window.from - d.start) / (d.stepHours * HOUR_MS),
@@ -239,11 +246,12 @@ export function Dashboard({ user }: { user: User }) {
               )}
             </div>
 
-            {data.truncated && (
-              <p className="text-muted-foreground/70 text-xs">
-                Showing your most recent 1,000 commits (GitHub search cap).
-              </p>
-            )}
+            <p className="text-muted-foreground/70 text-xs">
+              Last {Math.round(data.lookbackDays / 30)} months
+              {data.repos.length > DEFAULT_TOP_REPOS &&
+                ` · showing your ${DEFAULT_TOP_REPOS} busiest of ${data.repos.length} repos — add more in the menu`}
+              {data.truncated && " · capped for speed"}
+            </p>
 
             <Card className="overflow-hidden border bg-[#0d1117] p-0">
               <div className="relative aspect-[2/1] w-full">

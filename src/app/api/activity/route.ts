@@ -13,10 +13,10 @@ export async function GET() {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  let viewer, events, truncated;
+  let viewer, events, truncated, sinceDays;
   try {
     viewer = await getViewer(token);
-    ({ events, truncated } = await fetchCommitEvents(token, viewer.login));
+    ({ events, truncated, sinceDays } = await fetchCommitEvents(token, viewer.login));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("activity: github fetch failed:", message);
@@ -31,6 +31,7 @@ export async function GET() {
       viewer,
       empty: true,
       truncated: false,
+      lookbackDays: sinceDays,
       start: 0,
       stepHours: 1,
       hours: 0,
@@ -50,6 +51,7 @@ export async function GET() {
     viewer,
     truncated,
     empty: false,
+    lookbackDays: sinceDays,
     start: s.start,
     stepHours: s.stepHours,
     hours: s.hours,
