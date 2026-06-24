@@ -48,8 +48,10 @@ _ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 LOGO_PATH = os.path.join(_ASSETS, "securityronin-logo.png")
 QR_PATH = os.path.join(_ASSETS, "app-qr.png")
 CREDIT_NAME = "4n6h4x0r"
-CREDIT_LINK = "gh-activity-plotter.securityronin.com"
-CREDIT_URL = "https://gh-activity-plotter.securityronin.com"
+# Text under the handle links to the author's LinkedIn; the QR (app-qr.png)
+# stays pointed at the app so viewers can plot their own.
+CREDIT_LINK = "https://www.linkedin.com/in/alberthui"
+CREDIT_URL = "https://www.linkedin.com/in/alberthui"
 
 
 def _draw_credit(fig) -> None:
