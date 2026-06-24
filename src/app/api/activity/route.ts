@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { binCommitsHourly, detectOnsetWindow } from "@/lib/activity";
 import { fetchCommitEvents, getViewer } from "@/lib/github";
+import { classifyPersona } from "@/lib/persona";
 
 // Fetching a developer's commit history can take a few seconds; Fluid Compute
 // gives us the headroom.
@@ -46,6 +47,15 @@ export async function GET() {
 
   const s = binCommitsHourly(events);
   const w = detectOnsetWindow(s);
+  const totals = new Array<number>(s.hours).fill(0);
+  for (const arr of Object.values(s.series)) {
+    for (let i = 0; i < s.hours; i++) totals[i] += arr[i];
+  }
+  const persona = classifyPersona({
+    start: s.start,
+    stepHours: s.stepHours,
+    total: totals,
+  });
   const privateSet = new Set(privateRepos);
   const repos = Object.entries(s.totals)
     .sort((a, b) => b[1] - a[1])
@@ -55,6 +65,7 @@ export async function GET() {
     viewer,
     truncated,
     empty: false,
+    persona,
     lookbackDays: sinceDays,
     start: s.start,
     stepHours: s.stepHours,

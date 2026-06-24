@@ -15,10 +15,17 @@ import { Slider } from "@/components/ui/slider";
 import { defaultRepoSelection, HOUR_MS } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
+interface Persona {
+  persona: string;
+  emoji: string;
+  superlative: string;
+}
+
 interface ActivityData {
   viewer: { login: string; name: string | null; avatarUrl: string | null };
   empty: boolean;
   truncated: boolean;
+  persona?: Persona;
   lookbackDays: number;
   start: number;
   stepHours: number;
@@ -101,6 +108,9 @@ export function Dashboard({ user }: { user: User }) {
           selected: [...selected],
           window: [from, to],
           title: `${data.viewer.login}'s GitHub Activity History`,
+          subtitle: data.persona
+            ? `${data.persona.persona} · ${data.persona.superlative}`
+            : undefined,
         }),
         signal: ctrl.signal,
       });
@@ -188,10 +198,13 @@ export function Dashboard({ user }: { user: User }) {
           throw new Error(e.detail || e.error || res.statusText);
         }
         const { shareUrl } = await res.json();
+        const text = data.persona
+          ? `My code inkblot says I'm a ${data.persona.persona} ${data.persona.emoji} — what's yours?`
+          : "My code inkblot 🦇 — what's yours?";
         const intent =
           platform === "x"
             ? `https://x.com/intent/post?text=${encodeURIComponent(
-                "My GitHub activity, plotted 📈",
+                text,
               )}&url=${encodeURIComponent(shareUrl)}`
             : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
                 shareUrl,
