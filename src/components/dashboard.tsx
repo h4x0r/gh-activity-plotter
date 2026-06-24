@@ -96,7 +96,7 @@ export function Dashboard({ user }: { user: User }) {
           series: data.series,
           selected: [...selected],
           window: [from, to],
-          title: `${data.viewer.login} — github activity`,
+          title: `${data.viewer.login}'s GitHub Activity History`,
         }),
         signal: ctrl.signal,
       });

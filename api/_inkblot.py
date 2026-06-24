@@ -238,7 +238,7 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
     )
     leg.get_title().set_color(MUTED)
 
-    title = payload.get("title") or "your github activity — commit inkblot"
+    title = payload.get("title") or "GitHub Activity History"
     subtitle = payload.get("subtitle") or (
         "stacked streamgraph (symmetric) · total thickness = commits/hour · "
         "busiest band centered"
