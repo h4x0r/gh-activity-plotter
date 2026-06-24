@@ -285,13 +285,12 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
                 label=f"…and {len(repos) - legend_max} more",
             )
         )
-    # right-anchored in figure coords so the legend hugs the right edge,
-    # leaving only a thin margin regardless of repo-name lengths
+    # anchored just right of the plot (axes coords) so it sits close to the
+    # chart; the fixed axes width below makes it reach the right edge too
     leg = ax.legend(
         handles=handles,
-        loc="center right",
-        bbox_to_anchor=(0.992, 0.5),
-        bbox_transform=fig.transFigure,
+        loc="center left",
+        bbox_to_anchor=(1.015, 0.5),
         ncol=1,
         fontsize=6.4,
         framealpha=0.0,
@@ -299,7 +298,7 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
         handlelength=1.0,
         handleheight=1.0,
         labelspacing=0.28,
-        title="repo (commits) — busiest first",
+        title="repo (commits)",
         title_fontsize=7.5,
     )
     leg.get_title().set_color(MUTED)
@@ -323,9 +322,11 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
     )
     fig.text(0.5, 0.012, cap, ha="center", fontsize=8, color=FAINT)
 
-    # reserve a bottom band for the credit; the right edge leaves room for the
-    # right-hugged legend without an empty far-right margin
-    plt.tight_layout(rect=(0.0, 0.13, 0.86, 0.92))
+    # Fixed margins (not tight_layout, which shrinks the axes to fit the legend
+    # and leaves a wide chart→legend gap). The axes runs to 0.86; the adjacent
+    # legend then fills 0.86→right-edge, so it's both close to the chart and
+    # hugging the edge. Bottom band reserved for the credit.
+    fig.subplots_adjust(left=0.055, right=0.86, top=0.90, bottom=0.14)
     _draw_credit(fig)
 
     buf = io.BytesIO()
