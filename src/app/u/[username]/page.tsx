@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { after } from "next/server";
 import Link from "next/link";
 import { LinkedInMark, XMark } from "@/components/brand-icons";
 import { UActions } from "@/components/u-actions";
@@ -45,6 +46,17 @@ export default async function PublicInkblotPage({ params }: Params) {
 
   const img = `/u/${username}/inkblot.png`;
   const pageUrl = `${APP}/u/${username}`;
+
+  // Pre-warm the image cache after the response so the OG scrape (and the
+  // README embed) hit a warm CDN entry instead of a cold ~render. The human's
+  // <img> load below also warms it; this covers a scraper-first page hit.
+  after(async () => {
+    try {
+      await fetch(`${APP}/u/${username}/inkblot.png`, { cache: "no-store" });
+    } catch {
+      // best-effort warm; ignore failures
+    }
+  });
   const embed = `![${username}'s code inkblot](${APP}/u/${username}/inkblot.png)`;
   const xHref = `https://x.com/intent/post?text=${encodeURIComponent(
     `${username}'s code inkblot 🦇 — what's yours?`,

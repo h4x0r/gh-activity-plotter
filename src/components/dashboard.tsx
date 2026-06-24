@@ -271,6 +271,18 @@ export function Dashboard({ user }: { user: User }) {
           </Card>
         ) : (
           <>
+            {data.persona && (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-lg font-semibold tracking-tight">
+                  <span className="mr-1">{data.persona.emoji}</span>
+                  You&apos;re a{" "}
+                  <span className="text-primary">{data.persona.persona}</span>
+                </span>
+                <span className="text-muted-foreground text-sm">
+                  {data.persona.superlative}
+                </span>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-4">
               <RepoPicker
                 repos={data.repos}
