@@ -59,6 +59,7 @@ export async function GET(req: Request, { params }: Params) {
       window: [w.from, w.to],
       title: `${act.viewer.login}'s GitHub Activity History`,
       subtitle: `${persona.persona} · ${persona.superlative}`,
+      persona_emoji: persona.emoji,
       avatar_url: act.viewer.avatarUrl ?? undefined,
     };
   }

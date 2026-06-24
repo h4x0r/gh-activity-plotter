@@ -97,6 +97,34 @@ def _draw_avatar(fig, url: str | None) -> None:
         pass
 
 
+_EMOJI_DIR = os.path.join(_ASSETS, "emoji")
+
+
+def _emoji_codepoint(emoji: str) -> str | None:
+    """Twemoji filename stem for an emoji (FE0F variation selector dropped),
+    e.g. '🌙' -> '1f319', '🛠️' -> '1f6e0'."""
+    cps = [f"{ord(c):x}" for c in emoji if ord(c) != 0xFE0F]
+    return "-".join(cps) if cps else None
+
+
+def _draw_persona_emoji(fig, emoji: str | None) -> None:
+    """Top-right color persona emoji (bundled Twemoji PNG) — balances the
+    avatar and adds the color matplotlib's fonts can't render in the subtitle.
+    Missing/unknown emoji silently skips."""
+    cp = _emoji_codepoint(emoji or "")
+    if not cp:
+        return
+    path = os.path.join(_EMOJI_DIR, f"{cp}.png")
+    if not os.path.exists(path):
+        return
+    try:
+        ax = fig.add_axes((0.912, 0.905, 0.058, 0.072), zorder=11)
+        ax.imshow(plt.imread(path), interpolation="antialiased")
+        ax.axis("off")
+    except Exception:
+        pass
+
+
 def _draw_credit(fig) -> None:
     """Branding: bottom-left Security Ronin logo + handle + app link; bottom-right
     QR code to the app.
@@ -374,6 +402,7 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
     fig.subplots_adjust(left=0.055, right=0.86, top=0.90, bottom=0.14)
     _draw_credit(fig)
     _draw_avatar(fig, payload.get("avatar_url"))
+    _draw_persona_emoji(fig, payload.get("persona_emoji"))
 
     buf = io.BytesIO()
     out_fmt = "svg" if fmt == "svg" else "png"

@@ -14,6 +14,7 @@ from _inkblot import (
     MAX_POINTS,
     MAX_REPOS,
     _allowed_avatar_host,
+    _emoji_codepoint,
     render_inkblot,
 )
 
@@ -121,6 +122,14 @@ def test_non_numeric_counts_raise():
     except (ValueError, TypeError):
         return
     raise AssertionError("expected an error on non-numeric counts")
+
+
+def test_emoji_codepoint():
+    assert _emoji_codepoint("🌙") == "1f319"
+    assert _emoji_codepoint("🛠️") == "1f6e0"  # FE0F variation selector stripped
+    assert _emoji_codepoint("⚡") == "26a1"
+    assert _emoji_codepoint("🐢") == "1f422"
+    assert _emoji_codepoint("") is None
 
 
 def test_allowed_avatar_host_accepts_github():
