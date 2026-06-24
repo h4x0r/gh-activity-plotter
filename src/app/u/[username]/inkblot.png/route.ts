@@ -1,4 +1,5 @@
 import { binCommitsHourly, detectOnsetWindow } from "@/lib/activity";
+import { audit } from "@/lib/audit";
 import { fetchPublicActivity, isValidGitHubUsername } from "@/lib/github";
 import { classifyPersona } from "@/lib/persona";
 
@@ -31,6 +32,7 @@ export async function GET(req: Request, { params }: Params) {
   }
 
   let payload: Record<string, unknown>;
+  let personaName = "none";
   if (act.events.length === 0) {
     // never break a README image — render a clear placeholder
     payload = {
@@ -49,6 +51,7 @@ export async function GET(req: Request, { params }: Params) {
       for (let i = 0; i < s.hours; i++) total[i] += arr[i];
     }
     const persona = classifyPersona({ start: s.start, stepHours: s.stepHours, total });
+    personaName = persona.persona;
     payload = {
       start: s.start,
       step_hours: s.stepHours,
@@ -59,6 +62,14 @@ export async function GET(req: Request, { params }: Params) {
       avatar_url: act.viewer.avatarUrl ?? undefined,
     };
   }
+
+  audit({
+    event: "public_render",
+    username,
+    commits: act.events.length,
+    persona: personaName,
+    truncated: act.truncated,
+  });
 
   const res = await fetch(`${appOrigin(req)}/api/render`, {
     method: "POST",

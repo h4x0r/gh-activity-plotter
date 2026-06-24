@@ -14,6 +14,11 @@ We aim to acknowledge within 72 hours.
   renderer range-checks every size field before allocating (`MAX_REPOS`,
   `MAX_HOURS`, a `repos*hours` `MAX_POINTS` ceiling) and rejects malformed
   counts; the handler caps the request body at 16 MB. See `api/_inkblot.py`.
+- **Operational audit logs.** Inkblot writes structured log lines (no database)
+  for sign-ins and chart queries — the GitHub login or queried username, repo
+  count, lookback window, and detected persona — to the platform logs (drained
+  to Axiom). These are operational telemetry retained per the platform's log
+  retention, not stored by the app.
 - **No data at rest.** Inkblot reads commit metadata (repo + timestamp) and
   renders on the fly. There is no database; the GitHub OAuth token lives only in
   the encrypted session cookie.

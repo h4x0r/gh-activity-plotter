@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { binCommitsHourly, detectOnsetWindow } from "@/lib/activity";
+import { audit } from "@/lib/audit";
 import { fetchCommitEvents, getViewer } from "@/lib/github";
 import { classifyPersona } from "@/lib/persona";
 
@@ -55,6 +56,15 @@ export async function GET() {
     start: s.start,
     stepHours: s.stepHours,
     total: totals,
+  });
+  audit({
+    event: "activity",
+    login: viewer.login,
+    repos: Object.keys(s.series).length,
+    commits: events.length,
+    lookbackDays: sinceDays,
+    truncated,
+    persona: persona.persona,
   });
   const privateSet = new Set(privateRepos);
   const repos = Object.entries(s.totals)

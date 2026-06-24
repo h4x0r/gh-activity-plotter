@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
+import { audit } from "@/lib/audit";
 
 /**
  * Auth.js (NextAuth v5) with a single GitHub provider — the whole front door.
@@ -22,6 +23,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.accessToken = token.accessToken;
       return session;
+    },
+  },
+  events: {
+    signIn({ user, profile }) {
+      const login =
+        (profile && typeof profile.login === "string" && profile.login) ||
+        user?.email ||
+        null;
+      audit({ event: "login", login });
     },
   },
 });
