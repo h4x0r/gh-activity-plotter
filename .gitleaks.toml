@@ -1,5 +1,5 @@
 # gitleaks config — secret scanning for the repo (CI + pre-commit).
-title = "gh-activity-plotter gitleaks config"
+title = "inkblot gitleaks config"
 
 [extend]
 # Start from gitleaks' maintained default rule set.

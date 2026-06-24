@@ -8,7 +8,7 @@ import { isValidGitHubUsername } from "@/lib/github";
 import { cn } from "@/lib/utils";
 
 const APP =
-  process.env.AUTH_URL ?? "https://gh-activity-plotter.securityronin.com";
+  process.env.AUTH_URL ?? "https://inkblot.securityronin.com";
 
 type Search = Record<string, string | string[] | undefined>;
 type Params = {

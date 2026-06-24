@@ -6,7 +6,7 @@ import { decodeShare } from "@/lib/share";
 import { cn } from "@/lib/utils";
 
 const APP_URL =
-  process.env.AUTH_URL ?? "https://gh-activity-plotter.securityronin.com";
+  process.env.AUTH_URL ?? "https://inkblot.securityronin.com";
 
 type Params = { params: Promise<{ token: string }> };
 
