@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   description: "The terms for using Inkblot.",
 };
 
-// NOTE (dev): AI-drafted starting point. Have it reviewed by counsel and confirm
-// the governing-law clause before relying on it.
+// NOTE (dev): AI-drafted starting point (governing law: Hong Kong SAR). Have it
+// reviewed by counsel before relying on it.
 export default function TermsPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -73,8 +73,9 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold">Changes &amp; governing law</h2>
           <p className="mt-2">
             We may update these Terms; continued use means acceptance. These
-            Terms are governed by the laws of the jurisdiction in which Security
-            Ronin Ltd is established.
+            Terms are governed by the laws of the Hong Kong Special
+            Administrative Region of the People&rsquo;s Republic of China, and
+            you submit to the exclusive jurisdiction of its courts.
           </p>
         </section>
 
