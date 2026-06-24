@@ -36,14 +36,22 @@ describe("findOnsetIndex", () => {
   it("finds the ramp and backs up by the pad (no smoothing)", () => {
     // 50 quiet bins then 50 busy bins; peak = 10, threshold = 0.2*10 = 2
     const v = [...Array(50).fill(0), ...Array(50).fill(10)];
-    const idx = findOnsetIndex(v, { sigmaBins: 0, peakFraction: 0.2, padBins: 5 });
+    const idx = findOnsetIndex(v, {
+      sigmaBins: 0,
+      peakFraction: 0.2,
+      padBins: 5,
+    });
     // crossing is at index 50; padded back 5 => 45
     expect(idx).toBe(45);
   });
 
   it("never returns a negative index", () => {
     const v = [10, 10, 10];
-    const idx = findOnsetIndex(v, { sigmaBins: 0, peakFraction: 0.2, padBins: 5 });
+    const idx = findOnsetIndex(v, {
+      sigmaBins: 0,
+      peakFraction: 0.2,
+      padBins: 5,
+    });
     expect(idx).toBe(0);
   });
 
@@ -86,7 +94,11 @@ describe("detectOnsetWindow", () => {
       series: { x: counts },
       totals: { x: counts.reduce((a, b) => a + b, 0) },
     };
-    const w = detectOnsetWindow(s, { sigmaBins: 0, peakFraction: 0.2, padBins: 5 });
+    const w = detectOnsetWindow(s, {
+      sigmaBins: 0,
+      peakFraction: 0.2,
+      padBins: 5,
+    });
     // onset index 45 -> from = start + 45h; to = last bin
     expect(w.fromIndex).toBe(45);
     expect(w.from).toBe(start + 45 * HOUR_MS);

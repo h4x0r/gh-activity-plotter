@@ -1,0 +1,11 @@
+# Python linter/formatter config for the matplotlib renderer (api/).
+target-version = "py311"
+line-length = 88
+
+[lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
+# E501 (line length) is handled by the formatter; keep the linter focused.
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+"api/test_*.py" = ["N802", "N806"]

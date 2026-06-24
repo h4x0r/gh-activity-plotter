@@ -6,15 +6,15 @@ or hang would be a gatekeeper failure.
 
 Run: python3 -m pytest api/test_fuzz_inkblot.py
 """
+
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from _inkblot import render_inkblot
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
-
-from _inkblot import render_inkblot
 
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
@@ -54,7 +54,11 @@ def test_render_never_crashes(payload):
         out = render_inkblot(payload)
     except ValueError:
         return  # fail-loud is the accepted outcome
-    assert out.startswith(PNG_SIG) or out[:200].lstrip().startswith(b"<?xml") or b"<svg" in out[:400]
+    assert (
+        out.startswith(PNG_SIG)
+        or out[:200].lstrip().startswith(b"<?xml")
+        or b"<svg" in out[:400]
+    )
 
 
 @settings(max_examples=80, deadline=None, suppress_health_check=[HealthCheck.too_slow])
@@ -63,13 +67,14 @@ def test_render_never_crashes(payload):
     start=st.integers(min_value=0, max_value=2_000_000_000_000),
 )
 def test_unequal_series_lengths_fail_loud(series, start):
-    # force a length mismatch and require a ValueError, never a numpy/matplotlib crash
+    # Need two repos to force a guaranteed mismatch (the strategy already emits
+    # varied lengths, so make keys[0] strictly longer than keys[1]).
     keys = list(series.keys())
-    if len(keys) >= 2:
-        series[keys[0]] = series[keys[0]] + [1]
+    if len(keys) < 2:
+        return
+    series[keys[0]] = list(series[keys[1]]) + [1]  # always longer than keys[1]
     try:
         render_inkblot({"start": start, "series": series})
     except ValueError:
         return
-    # single-key (no mismatch introduced) may legitimately render
-    assert len(keys) < 2
+    raise AssertionError("expected ValueError on unequal series lengths")

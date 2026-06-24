@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from _inkblot import render_inkblot  # noqa: E402
+from _inkblot import render_inkblot
 
 try:
     from http.server import BaseHTTPRequestHandler

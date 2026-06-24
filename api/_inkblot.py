@@ -20,10 +20,10 @@ from typing import Any
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.dates as mdates  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-from matplotlib.patches import Patch  # noqa: E402
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Patch
 
 HOUR_MS = 3_600_000
 
@@ -106,9 +106,7 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
                     f"render_inkblot: non-numeric count in '{repo}': {v!r}"
                 )
             if v < 0:
-                raise ValueError(
-                    f"render_inkblot: negative count in '{repo}': {v!r}"
-                )
+                raise ValueError(f"render_inkblot: negative count in '{repo}': {v!r}")
 
     # --- selection -----------------------------------------------------------
     selected = payload.get("selected")
@@ -219,7 +217,9 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
     ax.margins(x=0.01)
 
     handles = [
-        Patch(facecolor=color_of[r], edgecolor="none", label=f"{r}  ({int(totals[r]):,})")
+        Patch(
+            facecolor=color_of[r], edgecolor="none", label=f"{r}  ({int(totals[r]):,})"
+        )
         for r in repos
     ]
     leg = ax.legend(
@@ -243,7 +243,9 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
         "stacked streamgraph (symmetric) · total thickness = commits/hour · "
         "busiest band centered"
     )
-    fig.text(0.5, 0.965, title, ha="center", fontsize=16, fontweight="bold", color=TITLE)
+    fig.text(
+        0.5, 0.965, title, ha="center", fontsize=16, fontweight="bold", color=TITLE
+    )
     fig.text(0.5, 0.938, subtitle, ha="center", fontsize=9, color=MUTED)
 
     total_commits = int(sum(totals[r] for r in repos))

@@ -8,7 +8,9 @@ describe("repoLabel", () => {
   });
 
   it("keeps owner/repo for other owners (avoids cross-owner collisions)", () => {
-    expect(repoLabel("SecurityRonin/issen", "h4x0r")).toBe("SecurityRonin/issen");
+    expect(repoLabel("SecurityRonin/issen", "h4x0r")).toBe(
+      "SecurityRonin/issen",
+    );
   });
 
   it("returns the name unchanged when there is no slash", () => {

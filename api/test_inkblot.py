@@ -3,6 +3,7 @@ the real-git-log render (Doer-Checker); these assert the contract invariants.
 
 Run: python3 api/test_inkblot.py   (or: python3 -m pytest api/test_inkblot.py)
 """
+
 import os
 import sys
 

@@ -61,8 +61,12 @@ export function Dashboard({ user }: { user: User }) {
         setData(d);
         setSelected(new Set(d.repos.map((r) => r.name)));
         if (!d.empty) {
-          const from = Math.round((d.window.from - d.start) / (d.stepHours * HOUR_MS));
-          const to = Math.round((d.window.to - d.start) / (d.stepHours * HOUR_MS));
+          const from = Math.round(
+            (d.window.from - d.start) / (d.stepHours * HOUR_MS),
+          );
+          const to = Math.round(
+            (d.window.to - d.start) / (d.stepHours * HOUR_MS),
+          );
           setRange([Math.max(0, from), Math.min(d.hours - 1, to)]);
         }
       } catch (err) {
@@ -126,9 +130,12 @@ export function Dashboard({ user }: { user: User }) {
   }, [renderInkblot, data]);
 
   // revoke the last object URL on unmount
-  useEffect(() => () => {
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    },
+    [],
+  );
 
   const toggle = useCallback((name: string) => {
     setSelected((prev) => {
@@ -154,7 +161,8 @@ export function Dashboard({ user }: { user: User }) {
     <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between border-b px-6 py-3">
         <span className="font-mono text-sm font-semibold tracking-tight">
-          inkblot<span className="text-muted-foreground"> · github activity</span>
+          inkblot
+          <span className="text-muted-foreground"> · github activity</span>
         </span>
         <div className="flex items-center gap-3">
           <span className="text-muted-foreground hidden text-sm sm:inline">
@@ -182,8 +190,10 @@ export function Dashboard({ user }: { user: User }) {
         ) : data.empty ? (
           <Card className="text-muted-foreground p-10 text-center text-sm">
             No commits found for{" "}
-            <span className="text-foreground font-mono">{data.viewer.login}</span> yet.
-            Go ship something. ✨
+            <span className="text-foreground font-mono">
+              {data.viewer.login}
+            </span>{" "}
+            yet. Go ship something. ✨
           </Card>
         ) : (
           <>

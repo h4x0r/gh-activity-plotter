@@ -68,10 +68,20 @@ export function RepoPicker({
           <div className="flex items-center justify-between border-b px-2 py-1.5">
             <span className="text-muted-foreground text-xs">{label}</span>
             <div className="flex gap-1">
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onAll}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={onAll}
+              >
                 All
               </Button>
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={onNone}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={onNone}
+              >
                 None
               </Button>
             </div>
@@ -89,10 +99,18 @@ export function RepoPicker({
                     className="flex items-center justify-between gap-2"
                   >
                     <span className="flex min-w-0 items-center gap-2">
-                      <Check className={cn("size-4 shrink-0", on ? "opacity-100" : "opacity-0")} />
+                      <Check
+                        className={cn(
+                          "size-4 shrink-0",
+                          on ? "opacity-100" : "opacity-0",
+                        )}
+                      />
                       <span className="truncate">{repo.name}</span>
                     </span>
-                    <Badge variant="secondary" className="font-mono text-[10px]">
+                    <Badge
+                      variant="secondary"
+                      className="font-mono text-[10px]"
+                    >
                       {repo.total.toLocaleString()}
                     </Badge>
                   </CommandItem>

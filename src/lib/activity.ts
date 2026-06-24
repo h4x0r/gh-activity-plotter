@@ -82,7 +82,10 @@ export function gaussianSmooth(values: number[], sigmaBins: number): number[] {
  * Index of the bin where activity first ramps up, backed off by `padBins`.
  * Returns 0 for an empty/all-zero series (nothing to anchor on).
  */
-export function findOnsetIndex(values: number[], opts: OnsetOptions = {}): number {
+export function findOnsetIndex(
+  values: number[],
+  opts: OnsetOptions = {},
+): number {
   const { sigmaBins, peakFraction, padBins } = { ...DEFAULT_ONSET, ...opts };
   if (values.length === 0) return 0;
   const smooth = gaussianSmooth(values, sigmaBins);

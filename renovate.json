@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": { "enabled": true, "automerge": true },
+  "packageRules": [
+    {
+      "description": "Group + automerge non-major updates for this app repo",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "non-major dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Keep Next/React/Auth.js majors as reviewed PRs",
+      "matchPackageNames": ["next", "react", "react-dom", "next-auth"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Python renderer deps (pip requirements)",
+      "matchManagers": ["pip_requirements"],
+      "groupName": "python deps"
+    }
+  ],
+  "vulnerabilityAlerts": { "labels": ["security"] }
+}

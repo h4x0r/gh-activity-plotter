@@ -20,7 +20,9 @@ describe("fuzz: gaussianSmooth", () => {
   it("preserves length and never produces NaN, for any input/sigma", () => {
     fc.assert(
       fc.property(
-        fc.array(fc.double({ min: 0, max: 1e6, noNaN: true }), { maxLength: 60 }),
+        fc.array(fc.double({ min: 0, max: 1e6, noNaN: true }), {
+          maxLength: 60,
+        }),
         fc.double({ min: 0, max: 50, noNaN: true }),
         (values, sigma) => {
           const out = gaussianSmooth(values, sigma);
