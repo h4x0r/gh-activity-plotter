@@ -76,13 +76,25 @@ export function PublicExplorer({ username }: { username: string }) {
     [data, range, selected],
   );
 
-  // keep the address bar in sync so a copy/refresh reproduces the view
+  // keep the address bar in sync so a copy/refresh reproduces the view.
+  // Debounced + guarded: dragging the slider fires paramString on every tick,
+  // and WebKit throws (SecurityError) past ~100 history.replaceState calls per
+  // 10s — which, uncaught here, tears down the whole explorer. We only need the
+  // URL correct once the drag settles, and a cosmetic URL update must never be
+  // able to crash the page.
   useEffect(() => {
     if (!data || data.empty) return;
     const url = paramString
       ? `/u/${username}?${paramString}`
       : `/u/${username}`;
-    window.history.replaceState(null, "", url);
+    const t = setTimeout(() => {
+      try {
+        window.history.replaceState(null, "", url);
+      } catch (err) {
+        console.warn("inkblot: URL sync skipped", err);
+      }
+    }, 250);
+    return () => clearTimeout(t);
   }, [paramString, username, data]);
 
   const toggle = useCallback((name: string) => {
