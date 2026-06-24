@@ -5,6 +5,7 @@ import { Download, Loader2, LogOut } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { doSignOut } from "@/app/actions";
+import { LinkedInMark, XMark } from "@/components/brand-icons";
 import { RepoPicker, type RepoInfo } from "@/components/repo-picker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export function Dashboard({ user }: { user: User }) {
   const [range, setRange] = useState<[number, number]>([0, 0]);
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sharing, setSharing] = useState<"x" | "linkedin" | null>(null);
 
   const urlRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -155,6 +157,49 @@ export function Dashboard({ user }: { user: User }) {
   }, [data]);
   const selectNone = useCallback(() => setSelected(new Set()), []);
 
+  // Publish the current chart to a public share link, then open the platform
+  // composer. The blank window is opened synchronously (before the async
+  // upload) so popup blockers don't eat it.
+  const share = useCallback(
+    async (platform: "x" | "linkedin") => {
+      if (!imgUrl || !data) return;
+      const win = window.open("", "_blank");
+      setSharing(platform);
+      try {
+        const png = await fetch(imgUrl).then((r) => r.blob());
+        const title = `${data.viewer.login}'s GitHub Activity History`;
+        const res = await fetch(`/api/share?title=${encodeURIComponent(title)}`, {
+          method: "POST",
+          headers: { "content-type": "image/png" },
+          body: png,
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.detail || e.error || res.statusText);
+        }
+        const { shareUrl } = await res.json();
+        const intent =
+          platform === "x"
+            ? `https://x.com/intent/post?text=${encodeURIComponent(
+                "My GitHub activity, plotted 📈",
+              )}&url=${encodeURIComponent(shareUrl)}`
+            : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                shareUrl,
+              )}`;
+        if (win) win.location.href = intent;
+        else window.open(intent, "_blank");
+      } catch (err) {
+        win?.close();
+        toast.error("Couldn't create a share link", {
+          description: (err as Error).message,
+        });
+      } finally {
+        setSharing(null);
+      }
+    },
+    [imgUrl, data],
+  );
+
   const rangeLabel = useMemo(() => {
     if (!data || data.empty) return "";
     return `${fmtDate(data.start + range[0] * stepMs)} → ${fmtDate(
@@ -231,16 +276,48 @@ export function Dashboard({ user }: { user: User }) {
                 />
               </div>
               {imgUrl && (
-                <a
-                  href={imgUrl}
-                  download="github-activity.png"
-                  className={cn(
-                    buttonVariants({ variant: "outline", size: "sm" }),
-                    "gap-2",
-                  )}
-                >
-                  <Download className="size-4" /> PNG
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={imgUrl}
+                    download="github-activity.png"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      "gap-2",
+                    )}
+                  >
+                    <Download className="size-4" /> PNG
+                  </a>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => share("x")}
+                    disabled={sharing !== null}
+                    title="Share to X"
+                  >
+                    {sharing === "x" ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <XMark className="size-4" />
+                    )}
+                    Share
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => share("linkedin")}
+                    disabled={sharing !== null}
+                    title="Share to LinkedIn"
+                  >
+                    {sharing === "linkedin" ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <LinkedInMark className="size-4" />
+                    )}
+                    Share
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -249,6 +326,7 @@ export function Dashboard({ user }: { user: User }) {
               {selected.size} of {data.repos.length} repos
               {selected.size < data.repos.length && " — add more in the menu"}
               {data.truncated && " · capped for speed"}
+              {" · Share publishes this chart to a public, unguessable link"}
             </p>
 
             <Card className="overflow-hidden border bg-[#0d1117] p-0">
