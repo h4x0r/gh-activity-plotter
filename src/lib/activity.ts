@@ -146,6 +146,38 @@ export function binCommitsHourly(
   return { start, stepHours, hours, series, totals };
 }
 
+export interface RepoTotal {
+  name: string;
+  total: number;
+}
+
+/**
+ * The repos to select by default: the busiest ones that together cover
+ * `coverage` of all commits (default 90%), hard-capped at `cap` (default 25).
+ * A focused developer gets a handful; a polymath gets up to the cap — instead of
+ * an arbitrary fixed count. Returns all repo names when every total is zero.
+ */
+export function defaultRepoSelection(
+  repos: RepoTotal[],
+  opts: { coverage?: number; cap?: number } = {},
+): string[] {
+  const coverage = opts.coverage ?? 0.9;
+  const cap = opts.cap ?? 25;
+  const total = repos.reduce((sum, r) => sum + r.total, 0);
+  if (total <= 0) return repos.map((r) => r.name);
+
+  const sorted = [...repos].sort((a, b) => b.total - a.total);
+  const target = total * coverage;
+  const out: string[] = [];
+  let cum = 0;
+  for (const r of sorted) {
+    out.push(r.name);
+    cum += r.total;
+    if (out.length >= cap || cum >= target) break;
+  }
+  return out;
+}
+
 export interface OnsetWindow {
   /** Epoch ms of the window start. */
   from: number;

@@ -11,7 +11,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
-import { HOUR_MS } from "@/lib/activity";
+import { defaultRepoSelection, HOUR_MS } from "@/lib/activity";
 import { cn } from "@/lib/utils";
 
 interface ActivityData {
@@ -28,8 +28,8 @@ interface ActivityData {
 }
 
 // With a deep history a developer can have 100+ repos; default the chart to the
-// busiest few so it reads cleanly, and let them add more from the repo picker.
-const DEFAULT_TOP_REPOS = 20;
+// busiest repos covering ~90% of commits (capped) so it reads cleanly, and let
+// them add more from the repo picker.
 
 const fmtDate = (ms: number) =>
   new Date(ms).toLocaleDateString(undefined, {
@@ -64,9 +64,7 @@ export function Dashboard({ user }: { user: User }) {
         }
         const d: ActivityData = await res.json();
         setData(d);
-        setSelected(
-          new Set(d.repos.slice(0, DEFAULT_TOP_REPOS).map((r) => r.name)),
-        );
+        setSelected(new Set(defaultRepoSelection(d.repos)));
         if (!d.empty) {
           const from = Math.round(
             (d.window.from - d.start) / (d.stepHours * HOUR_MS),
@@ -247,9 +245,9 @@ export function Dashboard({ user }: { user: User }) {
             </div>
 
             <p className="text-muted-foreground/70 text-xs">
-              Last {Math.round(data.lookbackDays / 30)} months
-              {data.repos.length > DEFAULT_TOP_REPOS &&
-                ` · showing your ${DEFAULT_TOP_REPOS} busiest of ${data.repos.length} repos — add more in the menu`}
+              Last {Math.round(data.lookbackDays / 30)} months ·{" "}
+              {selected.size} of {data.repos.length} repos
+              {selected.size < data.repos.length && " — add more in the menu"}
               {data.truncated && " · capped for speed"}
             </p>
 
