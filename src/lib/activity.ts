@@ -48,7 +48,12 @@ const DEFAULT_ONSET: Required<OnsetOptions> = {
  * caller always gets a fresh array it can mutate.
  */
 export function gaussianSmooth(values: number[], sigmaBins: number): number[] {
-  if (sigmaBins <= 0) return values.slice();
+  // Identity for non-positive, NaN, or so-tiny-it-underflows sigma: a denormal
+  // sigma makes the variance (2*sigma^2) underflow to 0, turning the kernel
+  // into exp(0/0)=NaN. Below ~1e-3 bins the smoothing is a no-op anyway.
+  if (!(2 * sigmaBins * sigmaBins > 0) || sigmaBins < 1e-3) {
+    return values.slice();
+  }
   const half = Math.max(1, Math.ceil(sigmaBins * 4));
   const kernel: number[] = [];
   let sum = 0;
