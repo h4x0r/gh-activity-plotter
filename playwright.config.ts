@@ -13,7 +13,20 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: "**/slider-stress.spec.ts",
+    },
+    {
+      // history.replaceState's rate limit only THROWS on WebKit (Chromium just
+      // warns), so this WebKit-only project guards that class of regression.
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+      testMatch: "**/slider-stress.spec.ts",
+    },
+  ],
   webServer: {
     command: `pnpm build && pnpm start -p ${PORT}`,
     url: `http://localhost:${PORT}`,

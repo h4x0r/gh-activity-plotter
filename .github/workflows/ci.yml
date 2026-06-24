@@ -54,8 +54,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
       - name: Run e2e journeys (mocked API)
         run: pnpm e2e
         env:
