@@ -46,40 +46,22 @@ TITLE = "#f0f6fc"
 # Attribution credit drawn bottom-left of every chart.
 _ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 LOGO_PATH = os.path.join(_ASSETS, "securityronin-logo.png")
-QR_PATH = os.path.join(_ASSETS, "linkedin-qr.png")
+QR_PATH = os.path.join(_ASSETS, "app-qr.png")
 CREDIT_NAME = "4n6h4x0r"
-CREDIT_LINKEDIN = "linkedin.com/in/alberthui"
-CREDIT_LINKEDIN_URL = "https://www.linkedin.com/in/alberthui"
+CREDIT_LINK = "gh-activity-plotter.securityronin.com"
+CREDIT_URL = "https://gh-activity-plotter.securityronin.com"
 
 
 def _draw_credit(fig) -> None:
-    """Bottom-left credit: Security Ronin logo + handle + LinkedIn link, plus a
-    QR code to the LinkedIn profile.
+    """Branding: bottom-left Security Ronin logo + handle + app link; bottom-right
+    QR code to the app.
 
-    The LinkedIn text carries a real hyperlink (clickable in SVG/PDF exports;
-    plain text in PNG); the QR makes the profile scannable from a shared image.
-    Missing assets degrade gracefully rather than failing the whole render.
+    The link text carries a real hyperlink (clickable in SVG/PDF exports; plain
+    text in PNG); the QR makes the app scannable from a shared image. Missing
+    assets degrade gracefully rather than failing the whole render.
     """
+    # bottom-left: Security Ronin logo + handle + app link
     x = 0.014
-    # QR leftmost — the scannable focal point
-    if os.path.exists(QR_PATH):
-        try:
-            qr = plt.imread(QR_PATH)
-            axq = fig.add_axes((x, 0.028, 0.052, 0.090), zorder=10)
-            axq.imshow(qr, interpolation="antialiased")
-            axq.axis("off")
-            fig.text(
-                x + 0.026,
-                0.016,
-                "scan to connect",
-                fontsize=6,
-                color=FAINT,
-                ha="center",
-            )
-            x += 0.066
-        except Exception:  # never let branding break the chart
-            pass
-    # Security Ronin logo
     if os.path.exists(LOGO_PATH):
         try:
             logo = plt.imread(LOGO_PATH)
@@ -87,21 +69,31 @@ def _draw_credit(fig) -> None:
             ax.imshow(logo, interpolation="antialiased")
             ax.axis("off")
             x += 0.084
-        except Exception:
+        except Exception:  # never let branding break the chart
             pass
-    # handle + LinkedIn link
     fig.text(
         x, 0.074, CREDIT_NAME, fontsize=10, color=TEXT, fontweight="bold", va="center"
     )
     fig.text(
-        x,
-        0.046,
-        CREDIT_LINKEDIN,
-        fontsize=7.5,
-        color=MUTED,
-        va="center",
-        url=CREDIT_LINKEDIN_URL,
+        x, 0.046, CREDIT_LINK, fontsize=7.5, color=MUTED, va="center", url=CREDIT_URL
     )
+    # bottom-right: QR to the app
+    if os.path.exists(QR_PATH):
+        try:
+            qr = plt.imread(QR_PATH)
+            axq = fig.add_axes((0.946, 0.024, 0.045, 0.084), zorder=10)
+            axq.imshow(qr, interpolation="antialiased")
+            axq.axis("off")
+            fig.text(
+                0.9685,
+                0.013,
+                "scan to plot yours",
+                fontsize=6,
+                color=FAINT,
+                ha="center",
+            )
+        except Exception:
+            pass
 
 
 def _require(payload: dict[str, Any], key: str) -> Any:
@@ -277,16 +269,29 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %d"))
     ax.margins(x=0.01)
 
+    # cap the legend so a many-repo selection doesn't overflow the figure
+    legend_max = 28
     handles = [
         Patch(
             facecolor=color_of[r], edgecolor="none", label=f"{r}  ({int(totals[r]):,})"
         )
-        for r in repos
+        for r in repos[:legend_max]
     ]
+    if len(repos) > legend_max:
+        handles.append(
+            Patch(
+                facecolor="none",
+                edgecolor="none",
+                label=f"…and {len(repos) - legend_max} more",
+            )
+        )
+    # right-anchored in figure coords so the legend hugs the right edge,
+    # leaving only a thin margin regardless of repo-name lengths
     leg = ax.legend(
         handles=handles,
-        loc="center left",
-        bbox_to_anchor=(1.005, 0.5),
+        loc="center right",
+        bbox_to_anchor=(0.992, 0.5),
+        bbox_transform=fig.transFigure,
         ncol=1,
         fontsize=6.4,
         framealpha=0.0,
@@ -316,10 +321,11 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
         f"Gaussian-smoothed hourly rate (sigma={sigma_hours:g}h) · "
         f"peak ~{total_peak:,.1f}/h around {x[di].strftime('%b %d %H:%M')}"
     )
-    fig.text(0.99, 0.012, cap, ha="right", fontsize=8, color=FAINT)
+    fig.text(0.5, 0.012, cap, ha="center", fontsize=8, color=FAINT)
 
-    # reserve a bottom band for the credit, then draw it
-    plt.tight_layout(rect=(0.0, 0.13, 0.89, 0.92))
+    # reserve a bottom band for the credit; the right edge leaves room for the
+    # right-hugged legend without an empty far-right margin
+    plt.tight_layout(rect=(0.0, 0.13, 0.86, 0.92))
     _draw_credit(fig)
 
     buf = io.BytesIO()
