@@ -21,9 +21,20 @@ except ImportError:  # pragma: no cover - stdlib always present
     BaseHTTPRequestHandler = object  # type: ignore
 
 
+# Reject oversized bodies before reading them into memory (defense in depth on
+# top of the per-field caps in render_inkblot).
+MAX_BODY_BYTES = 16 * 1024 * 1024  # 16 MB
+
+
 class handler(BaseHTTPRequestHandler):  # noqa: N801 - Vercel requires this name
     def do_POST(self):  # noqa: N802
         length = int(self.headers.get("content-length", 0) or 0)
+        if length > MAX_BODY_BYTES:
+            self.send_response(413)
+            self.send_header("content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "payload too large"}).encode())
+            return
         raw = self.rfile.read(length) if length else b"{}"
         try:
             payload = json.loads(raw or b"{}")

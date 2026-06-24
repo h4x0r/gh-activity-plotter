@@ -27,6 +27,14 @@ from matplotlib.patches import Patch  # noqa: E402
 
 HOUR_MS = 3_600_000
 
+# Paranoid-gatekeeper caps for the public render endpoint: range-check every
+# size field from the (untrusted) payload before allocating, so a crafted body
+# cannot turn /api/render into an allocation/CPU bomb. Generous for real users
+# (e.g. 6 years of hourly bins, hundreds of repos) but bounded.
+MAX_REPOS = 1_000
+MAX_HOURS = 24 * 366 * 6  # ~6 years of hourly bins
+MAX_POINTS = 5_000_000  # repos * hours product ceiling
+
 BG = "#0d1117"
 GRID = "#30363d"
 MUTED = "#8b949e"
@@ -70,13 +78,37 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
     fmt = str(payload.get("format", "png")).lower()
     sigma_hours = float(payload.get("sigma_hours", 8.0) or 8.0)
 
+    if len(series_in) > MAX_REPOS:
+        raise ValueError(
+            f"render_inkblot: too many repos ({len(series_in)} > {MAX_REPOS})"
+        )
+
     n_hours = len(next(iter(series_in.values())))
+    if n_hours > MAX_HOURS:
+        raise ValueError(
+            f"render_inkblot: series too long ({n_hours} > {MAX_HOURS} hours)"
+        )
+    if len(series_in) * n_hours > MAX_POINTS:
+        raise ValueError(
+            f"render_inkblot: too many data points "
+            f"({len(series_in)} repos x {n_hours} hours > {MAX_POINTS})"
+        )
+
     for repo, arr in series_in.items():
         if len(arr) != n_hours:
             raise ValueError(
                 f"render_inkblot: series length mismatch for '{repo}' "
                 f"({len(arr)} != {n_hours})"
             )
+        for v in arr:
+            if not isinstance(v, (int, float)) or isinstance(v, bool):
+                raise ValueError(
+                    f"render_inkblot: non-numeric count in '{repo}': {v!r}"
+                )
+            if v < 0:
+                raise ValueError(
+                    f"render_inkblot: negative count in '{repo}': {v!r}"
+                )
 
     # --- selection -----------------------------------------------------------
     selected = payload.get("selected")
