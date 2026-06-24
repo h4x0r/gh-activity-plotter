@@ -1,4 +1,10 @@
-import { binCommitsHourly, detectOnsetWindow } from "@/lib/activity";
+import {
+  binCommitsHourly,
+  decodeRepoMask,
+  defaultRepoSelection,
+  detectOnsetWindow,
+  parseChartParams,
+} from "@/lib/activity";
 import { audit } from "@/lib/audit";
 import { fetchPublicActivity, isValidGitHubUsername } from "@/lib/github";
 import { classifyPersona } from "@/lib/persona";
@@ -52,11 +58,22 @@ export async function GET(req: Request, { params }: Params) {
     }
     const persona = classifyPersona({ start: s.start, stepHours: s.stepHours, total });
     personaName = persona.persona;
+
+    // URL state: from/to window + repo bitmask; default-select when omitted
+    const { from, to, reposMask } = parseChartParams(new URL(req.url).searchParams);
+    const sortedNames = Object.keys(s.totals).sort();
+    const selected = reposMask
+      ? decodeRepoMask(sortedNames, reposMask)
+      : defaultRepoSelection(
+          Object.entries(s.totals).map(([name, t]) => ({ name, total: t })),
+        );
+
     payload = {
       start: s.start,
       step_hours: s.stepHours,
       series: s.series,
-      window: [w.from, w.to],
+      selected,
+      window: [from ?? w.from, to ?? w.to],
       title: `${act.viewer.login}'s GitHub Activity History`,
       subtitle: `${persona.persona} · ${persona.superlative}`,
       persona_emoji: persona.emoji,
