@@ -137,3 +137,85 @@ export function repoLabel(fullName: string, login: string): string {
     ? fullName.slice(slash + 1)
     : fullName;
 }
+
+// GitHub usernames: 1–39 chars, alphanumeric or single (non-consecutive)
+// hyphens, never leading/trailing. Validates the public /u/<username> param.
+const GH_USERNAME = /^[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}$/;
+
+export function isValidGitHubUsername(s: string): boolean {
+  return GH_USERNAME.test(s);
+}
+
+export interface PublicActivity {
+  viewer: Viewer;
+  events: CommitEvent[];
+  sinceDays: number;
+  truncated: boolean;
+}
+
+const PUBLIC_MAX_PAGES = 3; // ≤300 commits/repo — bounded for the embed/Camo timeout
+
+/**
+ * Fetch ANY user's PUBLIC commit activity (no login, no `repo` scope). Uses the
+ * app's GITHUB_TOKEN if set (5000/hr) and falls back to unauthenticated. Bounded
+ * tighter than the signed-in fetch so the README-embed render beats GitHub's
+ * image-proxy timeout; the CDN caches the result.
+ */
+export async function fetchPublicActivity(
+  username: string,
+  opts: FetchOptions = {},
+): Promise<PublicActivity> {
+  const octo = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  const sinceDays = opts.sinceDays ?? 365;
+  const since = new Date(Date.now() - sinceDays * DAY_MS).toISOString();
+  const maxRepos = opts.maxRepos ?? 40;
+  const maxCommits = opts.maxCommits ?? 8000;
+  const concurrency = opts.concurrency ?? 10;
+
+  const { data: u } = await octo.rest.users.getByUsername({ username });
+  const viewer: Viewer = { login: u.login, name: u.name, avatarUrl: u.avatar_url };
+
+  const allRepos = await octo.paginate(octo.rest.repos.listForUser, {
+    username,
+    type: "owner",
+    sort: "pushed",
+    direction: "desc",
+    per_page: PER_PAGE,
+  });
+  const active = allRepos.filter((r) => !r.fork && (r.pushed_at ?? "") >= since);
+  const repos = active.slice(0, maxRepos);
+  let truncated = active.length > maxRepos;
+
+  const events: CommitEvent[] = [];
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < repos.length && events.length < maxCommits) {
+      const r = repos[cursor++];
+      const label = repoLabel(r.full_name, username);
+      try {
+        for (let page = 1; page <= PUBLIC_MAX_PAGES; page++) {
+          const { data } = await octo.rest.repos.listCommits({
+            owner: username,
+            repo: r.name,
+            author: username,
+            since,
+            per_page: PER_PAGE,
+            page,
+          });
+          for (const c of data) {
+            const dateStr = c.commit?.author?.date ?? c.commit?.committer?.date;
+            if (!dateStr) continue;
+            const ts = Date.parse(dateStr);
+            if (!Number.isNaN(ts)) events.push({ repo: label, ts });
+          }
+          if (data.length < PER_PAGE) break;
+        }
+      } catch {
+        // empty/inaccessible repo — skip
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  if (events.length >= maxCommits) truncated = true;
+  return { viewer, events: events.slice(0, maxCommits), sinceDays, truncated };
+}
