@@ -7,7 +7,13 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _inkblot import HOUR_MS, render_inkblot
+from _inkblot import (
+    HOUR_MS,
+    MAX_HOURS,
+    MAX_POINTS,
+    MAX_REPOS,
+    render_inkblot,
+)
 
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
@@ -64,6 +70,55 @@ def test_window_with_no_commits_raises():
     except ValueError:
         return
     raise AssertionError("expected ValueError when window has no commits")
+
+
+def test_too_many_repos_raises():
+    series = {f"r{i}": [1, 0] for i in range(MAX_REPOS + 1)}
+    try:
+        render_inkblot({"start": 0, "series": series})
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError when repo count exceeds MAX_REPOS")
+
+
+def test_too_many_hours_raises():
+    series = {"a": [0] * (MAX_HOURS + 1)}
+    try:
+        render_inkblot({"start": 0, "series": series})
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError when series longer than MAX_HOURS")
+
+
+def test_total_points_cap_raises():
+    # repos * hours over the product cap, while each axis is individually legal
+    repos = 200
+    hours = (MAX_POINTS // repos) + 10
+    if hours > MAX_HOURS:
+        hours = MAX_HOURS  # keep the per-axis cap legal; product still huge
+        repos = (MAX_POINTS // hours) + 10
+    series = {f"r{i}": [0] * hours for i in range(repos)}
+    try:
+        render_inkblot({"start": 0, "series": series})
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError when repos*hours exceeds MAX_POINTS")
+
+
+def test_negative_counts_raise():
+    try:
+        render_inkblot({"start": 0, "series": {"a": [1, -3, 2]}})
+    except ValueError:
+        return
+    raise AssertionError("expected ValueError on negative commit counts")
+
+
+def test_non_numeric_counts_raise():
+    try:
+        render_inkblot({"start": 0, "series": {"a": [1, "boom", 2]}})
+    except (ValueError, TypeError):
+        return
+    raise AssertionError("expected an error on non-numeric counts")
 
 
 if __name__ == "__main__":
