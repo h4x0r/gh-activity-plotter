@@ -60,45 +60,48 @@ def _draw_credit(fig) -> None:
     plain text in PNG); the QR makes the profile scannable from a shared image.
     Missing assets degrade gracefully rather than failing the whole render.
     """
-    text_x = 0.018
+    x = 0.014
+    # QR leftmost — the scannable focal point
+    if os.path.exists(QR_PATH):
+        try:
+            qr = plt.imread(QR_PATH)
+            axq = fig.add_axes((x, 0.028, 0.052, 0.090), zorder=10)
+            axq.imshow(qr, interpolation="antialiased")
+            axq.axis("off")
+            fig.text(
+                x + 0.026,
+                0.016,
+                "scan to connect",
+                fontsize=6,
+                color=FAINT,
+                ha="center",
+            )
+            x += 0.066
+        except Exception:  # never let branding break the chart
+            pass
+    # Security Ronin logo
     if os.path.exists(LOGO_PATH):
         try:
             logo = plt.imread(LOGO_PATH)
-            ax = fig.add_axes((0.014, 0.030, 0.075, 0.072), zorder=10)
+            ax = fig.add_axes((x, 0.032, 0.075, 0.072), zorder=10)
             ax.imshow(logo, interpolation="antialiased")
             ax.axis("off")
-            text_x = 0.100
-        except Exception:  # never let branding break the chart
+            x += 0.084
+        except Exception:
             pass
+    # handle + LinkedIn link
     fig.text(
-        text_x,
-        0.072,
-        CREDIT_NAME,
-        fontsize=10,
-        color=TEXT,
-        fontweight="bold",
-        va="center",
+        x, 0.074, CREDIT_NAME, fontsize=10, color=TEXT, fontweight="bold", va="center"
     )
     fig.text(
-        text_x,
-        0.044,
+        x,
+        0.046,
         CREDIT_LINKEDIN,
         fontsize=7.5,
         color=MUTED,
         va="center",
         url=CREDIT_LINKEDIN_URL,
     )
-    if os.path.exists(QR_PATH):
-        try:
-            qr = plt.imread(QR_PATH)
-            axq = fig.add_axes((0.210, 0.026, 0.052, 0.090), zorder=10)
-            axq.imshow(qr, interpolation="antialiased")
-            axq.axis("off")
-            fig.text(
-                0.236, 0.016, "scan to connect", fontsize=6, color=FAINT, ha="center"
-            )
-        except Exception:
-            pass
 
 
 def _require(payload: dict[str, Any], key: str) -> Any:
