@@ -1,7 +1,12 @@
 import { Sparkles } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { doSignIn } from "@/app/actions";
 import { UsernameForm } from "@/components/username-form";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const DEMOS = ["torvalds", "gaearon", "antirez", "sindresorhus"];
 
 // lucide-react v1 dropped brand glyphs, so the GitHub mark is inlined.
 function GitHubMark({ className }: { className?: string }) {
@@ -40,6 +45,23 @@ export function Landing() {
 
           {/* primary, friction-free: no login */}
           <UsernameForm />
+
+          {/* one-click demos — see it without typing */}
+          <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="text-muted-foreground">or see a demo:</span>
+            {DEMOS.map((u) => (
+              <Link
+                key={u}
+                href={`/u/${u}`}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "font-mono",
+                )}
+              >
+                @{u}
+              </Link>
+            ))}
+          </div>
 
           {/* secondary: sign in only to include private repos */}
           <form action={doSignIn}>
