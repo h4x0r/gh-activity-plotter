@@ -13,9 +13,9 @@ import os
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-from PIL import Image, ImageDraw  # noqa: E402
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image, ImageDraw
 
 BG = (13, 17, 23)  # #0d1117
 HERE = os.path.dirname(os.path.abspath(__file__))
