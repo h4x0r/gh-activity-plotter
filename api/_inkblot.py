@@ -47,7 +47,7 @@ TITLE = "#f0f6fc"
 _ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 LOGO_PATH = os.path.join(_ASSETS, "securityronin-logo.png")
 QR_PATH = os.path.join(_ASSETS, "app-qr.png")
-CREDIT_NAME = "4n6h4x0r"
+CREDIT_NAME = 'Albert Hui "4n6h4x0r"'
 # Text under the handle links to the author's LinkedIn; the QR (app-qr.png)
 # stays pointed at the app so viewers can plot their own.
 CREDIT_LINK = "https://www.linkedin.com/in/alberthui"
