@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import datetime as dt
 import io
+import os
 from typing import Any
 
 import matplotlib
@@ -41,6 +42,63 @@ MUTED = "#8b949e"
 FAINT = "#6e7681"
 TEXT = "#c9d1d9"
 TITLE = "#f0f6fc"
+
+# Attribution credit drawn bottom-left of every chart.
+_ASSETS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+LOGO_PATH = os.path.join(_ASSETS, "securityronin-logo.png")
+QR_PATH = os.path.join(_ASSETS, "linkedin-qr.png")
+CREDIT_NAME = "4n6h4x0r"
+CREDIT_LINKEDIN = "linkedin.com/in/alberthui"
+CREDIT_LINKEDIN_URL = "https://www.linkedin.com/in/alberthui"
+
+
+def _draw_credit(fig) -> None:
+    """Bottom-left credit: Security Ronin logo + handle + LinkedIn link, plus a
+    QR code to the LinkedIn profile.
+
+    The LinkedIn text carries a real hyperlink (clickable in SVG/PDF exports;
+    plain text in PNG); the QR makes the profile scannable from a shared image.
+    Missing assets degrade gracefully rather than failing the whole render.
+    """
+    text_x = 0.018
+    if os.path.exists(LOGO_PATH):
+        try:
+            logo = plt.imread(LOGO_PATH)
+            ax = fig.add_axes((0.014, 0.030, 0.075, 0.072), zorder=10)
+            ax.imshow(logo, interpolation="antialiased")
+            ax.axis("off")
+            text_x = 0.100
+        except Exception:  # never let branding break the chart
+            pass
+    fig.text(
+        text_x,
+        0.072,
+        CREDIT_NAME,
+        fontsize=10,
+        color=TEXT,
+        fontweight="bold",
+        va="center",
+    )
+    fig.text(
+        text_x,
+        0.044,
+        CREDIT_LINKEDIN,
+        fontsize=7.5,
+        color=MUTED,
+        va="center",
+        url=CREDIT_LINKEDIN_URL,
+    )
+    if os.path.exists(QR_PATH):
+        try:
+            qr = plt.imread(QR_PATH)
+            axq = fig.add_axes((0.210, 0.026, 0.052, 0.090), zorder=10)
+            axq.imshow(qr, interpolation="antialiased")
+            axq.axis("off")
+            fig.text(
+                0.236, 0.016, "scan to connect", fontsize=6, color=FAINT, ha="center"
+            )
+        except Exception:
+            pass
 
 
 def _require(payload: dict[str, Any], key: str) -> Any:
@@ -257,7 +315,9 @@ def render_inkblot(payload: dict[str, Any]) -> bytes:
     )
     fig.text(0.99, 0.012, cap, ha="right", fontsize=8, color=FAINT)
 
-    plt.tight_layout(rect=(0.0, 0.02, 0.89, 0.92))
+    # reserve a bottom band for the credit, then draw it
+    plt.tight_layout(rect=(0.0, 0.13, 0.89, 0.92))
+    _draw_credit(fig)
 
     buf = io.BytesIO()
     out_fmt = "svg" if fmt == "svg" else "png"

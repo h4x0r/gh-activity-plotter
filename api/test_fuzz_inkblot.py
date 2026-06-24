@@ -72,7 +72,7 @@ def test_unequal_series_lengths_fail_loud(series, start):
     keys = list(series.keys())
     if len(keys) < 2:
         return
-    series[keys[0]] = list(series[keys[1]]) + [1]  # always longer than keys[1]
+    series[keys[0]] = [*series[keys[1]], 1]  # always longer than keys[1]
     try:
         render_inkblot({"start": start, "series": series})
     except ValueError:
