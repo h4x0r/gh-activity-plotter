@@ -3,6 +3,7 @@ import { buildActivityResponse } from "@/lib/activity-response";
 import { resolveView } from "@/lib/inkblot-view";
 import { audit } from "@/lib/audit";
 import { fetchPublicActivity, isValidGitHubUsername } from "@/lib/github";
+import { internalRenderUrl } from "@/lib/render-endpoint";
 
 export const maxDuration = 60;
 
@@ -10,12 +11,6 @@ export const maxDuration = 60;
 // instant and only the cold render is slow. Regenerable — never stored.
 const CACHE = "public, s-maxage=21600, stale-while-revalidate=86400";
 const HOUR_MS = 3_600_000;
-
-function appOrigin(req: Request): string {
-  if (process.env.AUTH_URL) return process.env.AUTH_URL.replace(/\/+$/, "");
-  const u = new URL(req.url);
-  return `${u.protocol}//${u.host}`;
-}
 
 type Params = { params: Promise<{ username: string }> };
 
@@ -81,11 +76,19 @@ export async function GET(req: Request, { params }: Params) {
     truncated: act.truncated,
   });
 
-  const res = await fetch(`${appOrigin(req)}/api/render`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  let res: Response;
+  try {
+    res = await fetch(internalRenderUrl(req.url), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    // fetch rejects (e.g. the render host is unreachable) → fail loud as 502,
+    // never an unhandled 500 that hides the cause from the logs
+    console.error(`u/${username}/inkblot.png: render fetch threw`, err);
+    return new Response("render unavailable", { status: 502 });
+  }
   if (!res.ok) {
     console.error(`u/${username}/inkblot.png: render failed (${res.status})`);
     return new Response("render failed", { status: 502 });

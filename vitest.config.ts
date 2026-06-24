@@ -14,6 +14,7 @@ export default defineConfig({
         "src/lib/activity-response.ts",
         "src/lib/inkblot-view.ts",
         "src/lib/persona.ts",
+        "src/lib/render-endpoint.ts",
         "src/lib/share.ts",
         "src/lib/audit.ts",
         "src/lib/utils.ts",
