@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   binCommitsHourly,
+  defaultRepoSelection,
   detectOnsetWindow,
   findOnsetIndex,
   gaussianSmooth,
@@ -79,6 +80,52 @@ describe("binCommitsHourly", () => {
 
   it("throws on empty input rather than silently returning empty", () => {
     expect(() => binCommitsHourly([])).toThrow();
+  });
+});
+
+describe("defaultRepoSelection", () => {
+  it("picks busiest repos until coverage is reached", () => {
+    const repos = [
+      { name: "a", total: 50 },
+      { name: "b", total: 40 },
+      { name: "c", total: 10 },
+    ];
+    // total 100, 90% target = 90; a(50)+b(90) >= 90 -> [a,b]
+    expect(defaultRepoSelection(repos)).toEqual(["a", "b"]);
+  });
+
+  it("sorts busiest-first regardless of input order", () => {
+    const repos = [
+      { name: "small", total: 5 },
+      { name: "big", total: 95 },
+    ];
+    expect(defaultRepoSelection(repos)).toEqual(["big"]);
+  });
+
+  it("hard-caps the count", () => {
+    const repos = Array.from({ length: 40 }, (_, i) => ({
+      name: `r${i}`,
+      total: 1,
+    }));
+    expect(defaultRepoSelection(repos, { cap: 25 })).toHaveLength(25);
+  });
+
+  it("respects a custom coverage fraction", () => {
+    const repos = [
+      { name: "a", total: 60 },
+      { name: "b", total: 30 },
+      { name: "c", total: 10 },
+    ];
+    // 50% target = 50; a(60) >= 50 -> [a]
+    expect(defaultRepoSelection(repos, { coverage: 0.5 })).toEqual(["a"]);
+  });
+
+  it("returns all repos when every total is zero", () => {
+    const repos = [
+      { name: "a", total: 0 },
+      { name: "b", total: 0 },
+    ];
+    expect(defaultRepoSelection(repos).sort()).toEqual(["a", "b"]);
   });
 });
 
