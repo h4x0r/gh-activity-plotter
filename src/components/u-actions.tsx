@@ -35,13 +35,13 @@ export function UActions({ embed }: { embed: string }) {
           value={handle}
           onChange={(e) => setHandle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && go()}
-          placeholder="your GitHub username"
+          placeholder="any GitHub username"
           aria-label="GitHub username"
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}
         />
-        <Button onClick={go}>Plot mine →</Button>
+        <Button onClick={go}>Plot →</Button>
       </div>
       <button
         type="button"

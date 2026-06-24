@@ -22,7 +22,7 @@ export function UsernameForm() {
         value={handle}
         onChange={(e) => setHandle(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && go()}
-        placeholder="your GitHub username"
+        placeholder="any GitHub username"
         aria-label="GitHub username"
         autoCapitalize="off"
         autoCorrect="off"
@@ -30,7 +30,7 @@ export function UsernameForm() {
         className="h-11 text-base"
       />
       <Button onClick={go} size="lg" className="shrink-0">
-        Plot mine →
+        Plot →
       </Button>
     </div>
   );
