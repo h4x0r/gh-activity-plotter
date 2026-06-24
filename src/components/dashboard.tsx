@@ -218,7 +218,11 @@ export function Dashboard({ user }: { user: User }) {
     <div className="flex flex-1 flex-col">
       <header className="flex items-center justify-between border-b px-6 py-3">
         <span className="font-mono text-sm font-semibold tracking-tight">
-          GitHub Activity Plotter
+          Inkblot
+          <span className="text-muted-foreground font-normal">
+            {" "}
+            · your code, as art
+          </span>
         </span>
         <div className="flex items-center gap-3">
           <span className="text-muted-foreground hidden text-sm sm:inline">

@@ -13,9 +13,9 @@ type Params = { params: Promise<{ token: string }> };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { token } = await params;
   const d = decodeShare(token);
-  if (!d) return { title: "GitHub Activity Plotter" };
+  if (!d) return { title: "Inkblot" };
   const description =
-    "Plotted with GitHub Activity Plotter — sign in with GitHub and chart your own.";
+    "Made with Inkblot — sign in with GitHub and reveal your own code inkblot.";
   return {
     title: d.t,
     description,
@@ -37,7 +37,7 @@ export default async function SharePage({ params }: Params) {
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
         <p className="text-muted-foreground">That share link is invalid or expired.</p>
         <Link href="/" className={cn(buttonVariants())}>
-          Go to GitHub Activity Plotter
+          Go to Inkblot
         </Link>
       </main>
     );
@@ -61,8 +61,8 @@ export default async function SharePage({ params }: Params) {
       <div className="flex flex-col items-center gap-4 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">{d.t}</h1>
         <p className="text-muted-foreground max-w-md text-pretty">
-          Plotted with GitHub Activity Plotter. Sign in with GitHub and watch your
-          own commit history bloom into a streamgraph.
+          Made with Inkblot. Sign in with GitHub and watch your own commit
+          history bloom into a streamgraph.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link href="/" className={cn(buttonVariants({ size: "lg" }), "gap-2")}>

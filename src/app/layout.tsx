@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitHub Activity Plotter",
+  title: "Inkblot — your GitHub activity, as art",
   description:
     "Sign in with GitHub and watch your commit history bloom into a symmetric streamgraph. A little pat on the back for the grind.",
 };

@@ -1,4 +1,4 @@
-# GitHub Activity Plotter
+# Inkblot
 
 **Sign in with GitHub and watch your commit history bloom into a symmetric streamgraph.** A Rorschach inkblot of every late night you shipped — a small, frictionless pat on the back for the grind.
 
@@ -47,7 +47,7 @@ flowchart LR
 
 ## Privacy
 
-GitHub Activity Plotter reads commit _metadata_ (repo name + timestamp) to draw the chart. It renders on the fly and **does not store your code or your commits** — there is no database. The GitHub token lives only in your encrypted session cookie.
+Inkblot reads commit _metadata_ (repo name + timestamp) to draw the chart. It renders on the fly and **does not store your code or your commits** — there is no database. The GitHub token lives only in your encrypted session cookie.
 
 ## Stack
 
