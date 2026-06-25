@@ -29,6 +29,29 @@ test("share page: typing a username plots them (no login required)", async ({
   await expect(page).toHaveURL(/\/u\/torvalds$/);
 });
 
+// The share page should mirror the landing's full call-to-action — not just
+// the username box, but the one-click demos and the sign-in option too.
+test("share page: mirrors the landing demos and sign-in", async ({ page }) => {
+  const token = Buffer.from(
+    JSON.stringify({
+      u: "https://demo.public.blob.vercel-storage.com/inkblot.png",
+      t: "Test inkblot",
+    }),
+  ).toString("base64url");
+  await page.goto(`/s/${token}`);
+
+  // one-click demos, exactly like the front page
+  await expect(page.getByText("or see a demo:")).toBeVisible();
+  await expect(page.getByRole("link", { name: "@torvalds" })).toBeVisible();
+
+  // sign-in option, exactly like the front page
+  await expect(
+    page.getByRole("button", {
+      name: /sign in to include your private repos/i,
+    }),
+  ).toBeVisible();
+});
+
 test("public explorer: renders persona, chart, and controls", async ({
   page,
 }) => {
