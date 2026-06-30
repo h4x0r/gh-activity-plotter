@@ -71,8 +71,19 @@ export async function fetchCommitEvents(
   const maxCommits = opts.maxCommits ?? DEFAULT_MAX_COMMITS;
   const concurrency = opts.concurrency ?? DEFAULT_CONCURRENCY;
 
-  // repos the viewer can see, most-recently-pushed first
-  const allRepos = await octo.paginate(
+  // Repos the viewer can see, most-recently-pushed first. Page lazily and stop
+  // as soon as we hold enough recently-pushed repos: the feed is sorted
+  // pushed-desc, so once a repo falls outside the lookback window every later
+  // repo does too, and once we hold maxRepos in-window repos the rest are older
+  // still. Eagerly walking every page would pull the whole affiliation set into
+  // memory — an account in large orgs can be affiliated with thousands of repos
+  // — and OOM the function before the maxRepos cap ever applies.
+  type RepoList = Awaited<
+    ReturnType<typeof octo.rest.repos.listForAuthenticatedUser>
+  >["data"];
+  const repos: RepoList = [];
+  let truncated = false;
+  for await (const { data } of octo.paginate.iterator(
     octo.rest.repos.listForAuthenticatedUser,
     {
       affiliation: "owner,collaborator,organization_member",
@@ -80,10 +91,22 @@ export async function fetchCommitEvents(
       direction: "desc",
       per_page: PER_PAGE,
     },
-  );
-  const active = allRepos.filter((r) => (r.pushed_at ?? "") >= since);
-  const repos = active.slice(0, maxRepos);
-  let truncated = active.length > maxRepos;
+  )) {
+    let stop = false;
+    for (const r of data) {
+      if ((r.pushed_at ?? "") < since) {
+        stop = true; // older than the window — and so is everything after it
+        break;
+      }
+      if (repos.length >= maxRepos) {
+        truncated = true; // a recent repo beyond the cap — some activity omitted
+        stop = true;
+        break;
+      }
+      repos.push(r);
+    }
+    if (stop) break;
+  }
 
   const events: CommitEvent[] = [];
   const privateRepos = new Set<string>();
