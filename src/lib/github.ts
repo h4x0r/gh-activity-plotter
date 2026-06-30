@@ -50,6 +50,9 @@ const DEFAULT_CONCURRENCY = 10;
 // killed. At ~150ms/call across DEFAULT_CONCURRENCY workers this still covers
 // roughly a thousand calls.
 const DEFAULT_BUDGET_MS = 15_000;
+// Tighter budget for the public /u path: it also feeds the README-embed PNG,
+// which renders behind GitHub's image proxy (Camo) and its ~seconds timeout.
+const PUBLIC_BUDGET_MS = 8_000;
 const DAY_MS = 86_400_000;
 
 export interface FetchOptions {
@@ -231,27 +234,61 @@ export async function fetchPublicActivity(
     avatarUrl: u.avatar_url,
   };
 
-  const allRepos = await octo.paginate(octo.rest.repos.listForUser, {
-    username,
-    type: "owner",
-    sort: "pushed",
-    direction: "desc",
-    per_page: PER_PAGE,
-  });
-  const active = allRepos.filter(
-    (r) => !r.fork && (r.pushed_at ?? "") >= since,
-  );
-  const repos = active.slice(0, maxRepos);
-  let truncated = active.length > maxRepos;
+  const now = opts.now ?? Date.now;
+  const deadline = now() + (opts.budgetMs ?? PUBLIC_BUDGET_MS);
+
+  // Page lazily and stop once we hold enough recently-pushed non-fork repos —
+  // see fetchCommitEvents for why eager enumeration is unsafe. Repos are sorted
+  // pushed-desc, so a repo older than the window means every later one is too.
+  type RepoList = Awaited<
+    ReturnType<typeof octo.rest.repos.listForUser>
+  >["data"];
+  const repos: RepoList = [];
+  let truncated = false;
+  for await (const { data } of octo.paginate.iterator(
+    octo.rest.repos.listForUser,
+    {
+      username,
+      type: "owner",
+      sort: "pushed",
+      direction: "desc",
+      per_page: PER_PAGE,
+    },
+  )) {
+    let stop = false;
+    for (const r of data) {
+      if ((r.pushed_at ?? "") < since) {
+        stop = true;
+        break;
+      }
+      if (r.fork) continue; // skip forks — not the user's own work
+      if (repos.length >= maxRepos) {
+        truncated = true;
+        stop = true;
+        break;
+      }
+      repos.push(r);
+    }
+    if (stop) break;
+  }
 
   const events: CommitEvent[] = [];
   let cursor = 0;
+  let hitDeadline = false;
   const worker = async () => {
     while (cursor < repos.length && events.length < maxCommits) {
+      if (now() >= deadline) {
+        hitDeadline = true;
+        return;
+      }
       const r = repos[cursor++];
       const label = repoLabel(r.full_name, username);
       try {
         for (let page = 1; page <= PUBLIC_MAX_PAGES; page++) {
+          if (now() >= deadline) {
+            hitDeadline = true;
+            break;
+          }
           const { data } = await octo.rest.repos.listCommits({
             owner: username,
             repo: r.name,
@@ -274,6 +311,6 @@ export async function fetchPublicActivity(
     }
   };
   await Promise.all(Array.from({ length: concurrency }, worker));
-  if (events.length >= maxCommits) truncated = true;
+  if (events.length >= maxCommits || hitDeadline) truncated = true;
   return { viewer, events: events.slice(0, maxCommits), sinceDays, truncated };
 }
