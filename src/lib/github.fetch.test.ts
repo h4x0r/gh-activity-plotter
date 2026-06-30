@@ -15,7 +15,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const oc = vi.hoisted(() => ({
   pagesPulled: 0,
   listCommitsCalls: 0,
+  graphqlHistoryCalls: 0,
   clock: 0,
+  commitsPerRepo: [] as string[],
   pages: [] as Array<Array<Record<string, unknown>>>,
 }));
 
@@ -62,6 +64,28 @@ vi.mock("@octokit/rest", () => {
           },
         },
         paginate,
+        graphql: async (query: string, vars: Record<string, unknown>) => {
+          if (/viewer/.test(query)) return { viewer: { id: "AUTHOR" } };
+          // batched history query: one aliased repository per o{i}/n{i} var
+          oc.graphqlHistoryCalls++;
+          oc.clock += 100;
+          const out: Record<string, unknown> = {};
+          let i = 0;
+          while (vars && vars[`o${i}`] !== undefined) {
+            out[`r${i}`] = {
+              defaultBranchRef: {
+                target: {
+                  history: {
+                    nodes: oc.commitsPerRepo.map((d) => ({ committedDate: d })),
+                    pageInfo: { hasNextPage: false, endCursor: null },
+                  },
+                },
+              },
+            };
+            i++;
+          }
+          return out;
+        },
       };
     }),
   };
@@ -83,7 +107,9 @@ describe("fetchCommitEvents — bounded repo enumeration", () => {
   beforeEach(() => {
     oc.pagesPulled = 0;
     oc.listCommitsCalls = 0;
+    oc.graphqlHistoryCalls = 0;
     oc.clock = 0;
+    oc.commitsPerRepo = [];
     oc.pages = [];
   });
 
@@ -99,21 +125,34 @@ describe("fetchCommitEvents — bounded repo enumeration", () => {
     expect(oc.pagesPulled).toBeLessThanOrEqual(2);
   });
 
+  it("captures commits from every repo via batched GraphQL history", async () => {
+    const now = new Date().toISOString();
+    oc.pages = [repoPage(30, now)]; // 30 repos in one enumeration page
+    oc.commitsPerRepo = [now, now]; // 2 authored commits each
+
+    const result = await fetchCommitEvents("token", "me", { concurrency: 1 });
+
+    // every repo's commits captured (30 × 2) ...
+    expect(result.events.length).toBe(60);
+    // ... but fetched in batches, not one request per repo.
+    expect(oc.graphqlHistoryCalls).toBeLessThanOrEqual(2);
+  });
+
   it("stops fetching commits when the wall-clock budget is exhausted", async () => {
     const now = new Date().toISOString();
-    oc.pages = [repoPage(10, now)]; // 10 recent repos, all in one page
+    oc.pages = [repoPage(60, now)]; // many repos → several GraphQL batches
 
-    // Each commit page advances the simulated clock by 100ms; a 150ms budget is
-    // spent after a repo or two, so most repos must go unfetched and the result
-    // must report itself truncated rather than running until the platform kills
-    // the function (which surfaces as a bare "Failed to fetch" in the browser).
+    // Each batch advances the simulated clock by 100ms; a 150ms budget is spent
+    // after a batch or two, so most repos go unfetched and the result reports
+    // itself truncated rather than running until the platform kills the function.
     const result = await fetchCommitEvents("token", "me", {
       concurrency: 1,
       budgetMs: 150,
       now: () => oc.clock,
     });
 
-    expect(oc.listCommitsCalls).toBeLessThan(10);
+    expect(oc.graphqlHistoryCalls).toBeGreaterThan(0); // GraphQL path is used
+    expect(oc.graphqlHistoryCalls).toBeLessThan(4); // budget cut it short
     expect(result.truncated).toBe(true);
   });
 });
@@ -126,7 +165,9 @@ describe("fetchPublicActivity — bounded enumeration and budget", () => {
   beforeEach(() => {
     oc.pagesPulled = 0;
     oc.listCommitsCalls = 0;
+    oc.graphqlHistoryCalls = 0;
     oc.clock = 0;
+    oc.commitsPerRepo = [];
     oc.pages = [];
   });
 
